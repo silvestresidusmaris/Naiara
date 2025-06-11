@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Warm Neutral Harmony -->
     <!-- Application Structure Plan: A thematic, non-linear SPA with a top navigation bar linking to interactive sections: a clickable plot timeline, a world comparison view with a time dilation chart, a filterable character relationship map, an artifact gallery, and a map of Naiara's legions. This structure is chosen to deconstruct the complex novel into explorable themes, allowing users to engage with the world, characters, and plot in any order, fostering discovery over linear reading. -->
-    <!-- Visualization & Content Choices: Plot -> Timeline (HTML/CSS) -> Click for info -> Visualizes narrative flow. Time Dilation -> Bar Chart (Chart.js) -> Compare -> Quantifies a key plot twist. Characters -> Interactive Map (HTML/CSS/JS) -> Explore relationships -> Clarifies social dynamics, now with LLM-powered character dialogue. Artifacts/Legions -> Cards/Diagram (HTML/CSS) -> Inform -> Organizes world-building info. This avoids static text and uses interaction to explain complex elements. -->
+    <!-- Visualization & Content Choices: Plot -> Timeline (HTML/CSS) -> Click for info -> Visualizes narrative flow. Time Dilation -> Bar Chart (Chart.js) -> Compare -> Quantifies a key plot twist. Characters -> Interactive Map (HTML/CSS/JS) -> Explore relationships -> Clarifies social dynamics, now with LLM-powered character dialogue. Artifacts/Legions -> Cards/Diagram (HTML/CSS) -> Inform -> Organizes world-building info, now with LLM-powered lore expansion for artifacts. This avoids static text and uses interaction to explain complex elements. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
@@ -214,7 +214,7 @@
             <section id="artifacts">
                 <div class="text-center mb-12">
                     <h2 class="text-3xl md:text-4xl font-bold font-cinzel text-[#8C6A5D]">Artefactos Mágicos</h2>
-                    <p class="mt-4 max-w-3xl mx-auto text-gray-600">Objetos imbuidos de un poder antiguo que pueden cambiar el curso del destino. Desde portales interdimensionales hasta la fuente de toda curación, estos artefactos son el centro de la trama.</p>
+                    <p class="mt-4 max-w-3xl mx-auto text-gray-600">Objetos imbuidos de un poder antiguo que pueden cambiar el curso del destino. Desde portales interdimensionales hasta la fuente de toda curación, estos artefactos son el centro de la trama. Haz clic en "Descubrir Lore Secreto" para una inmersión profunda.</p>
                 </div>
                 <div id="artifact-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 </div>
@@ -294,6 +294,18 @@
                     <div id="send-chat-loading" class="hidden loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-5 w-5 ml-2"></div>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <div id="lore-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden opacity-0">
+        <div class="modal-content bg-white rounded-lg shadow-xl max-w-lg w-full p-6 relative transform scale-95">
+            <button id="lore-modal-close-button" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h3 id="lore-modal-title" class="text-2xl font-bold font-cinzel text-[#8C6A5D] mb-4"></h3>
+            <p id="lore-modal-text" class="text-gray-700 min-h-[8rem] flex items-center justify-center">
+                <div id="lore-loading" class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12"></div>
+            </p>
         </div>
     </div>
 
@@ -398,9 +410,23 @@
                     <div class="text-6xl mb-4">${item.icon}</div>
                     <h4 class="text-xl font-bold font-cinzel text-[#8C6A5D] mb-2">${item.name}</h4>
                     <p class="text-gray-600 flex-grow">${item.description}</p>
+                    <button class="discover-lore-btn mt-4 px-4 py-2 bg-[#D4C3A3] text-white rounded-full text-sm hover:bg-[#A1887F] transition-colors flex items-center justify-center"
+                            data-artifact-name="${item.name}"
+                            data-artifact-description="${item.description}">
+                        ✨ Descubrir Lore Secreto
+                    </button>
                 `;
                 artifactContainer.appendChild(card);
             });
+
+            document.querySelectorAll('.discover-lore-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const artifactName = event.target.dataset.artifactName;
+                    const artifactDescription = event.target.dataset.artifactDescription;
+                    openLoreModal(artifactName, artifactDescription);
+                });
+            });
+
 
             const characterGrid = document.getElementById('character-grid');
             const renderCharacters = (filter) => {
@@ -612,8 +638,6 @@
                 sendChatText.classList.add('hidden');
                 sendChatLoading.classList.remove('hidden');
 
-                // This context needs to be dynamically pulled from the book content or a concise summary
-                // For a static HTML page, this is hardcoded for demonstration.
                 const bookSummary = `
                     'Naiara, la legión perdida y el árbol de la vida' es una novela de fantasía que sigue a Federico, quien viaja entre la Tierra y el mundo mágico de Naiara para encontrar la 'flor de lis' y curar a su madre enferma, Rachel. En Naiara, se reencuentra con su padre, descubre la familia real Lis (con el rey Lis, princesa Florencia y príncipe Ismael), y se alía con figuras como Antonio (científico del Sur), Tomás (guerrero del Árbol) y Valeria (guerrera misteriosa). Enfrenta al Tío Rony. Hay artefactos mágicos como el Redoblick (concede deseos), el Baúl Mágico (portal), y los Amuletos del Árbol de la Vida. El tiempo en Naiara pasa más lento (3 años Tierra = 6 meses Naiara).
                 `;
@@ -673,6 +697,79 @@
             chatInput.addEventListener('keypress', (event) => {
                 if (event.key === 'Enter') {
                     sendChatMessage();
+                }
+            });
+
+            // Lore Modal Logic
+            const loreModal = document.getElementById('lore-modal');
+            const loreModalTitle = document.getElementById('lore-modal-title');
+            const loreModalText = document.getElementById('lore-modal-text');
+            const loreLoading = document.getElementById('lore-loading');
+            const loreModalCloseButton = document.getElementById('lore-modal-close-button');
+
+            const openLoreModal = async (artifactName, artifactDescription) => {
+                loreModalTitle.textContent = `Lore Secreto de ${artifactName}`;
+                loreModalText.innerHTML = ''; // Clear previous content
+                loreModalText.appendChild(loreLoading); // Show loader
+                loreLoading.classList.remove('hidden');
+
+                loreModal.classList.remove('hidden');
+                setTimeout(() => loreModal.classList.remove('opacity-0'), 10);
+                setTimeout(() => loreModal.querySelector('.modal-content').classList.remove('scale-95'), 10);
+
+                const bookSummary = `
+                    'Naiara, la legión perdida y el árbol de la vida' es una novela de fantasía que sigue a Federico, quien viaja entre la Tierra y el mundo mágico de Naiara para encontrar la 'flor de lis' y curar a su madre enferma, Rachel. En Naiara, se reencuentra con su padre, descubre la familia real Lis (con el rey Lis, princesa Florencia y príncipe Ismael), y se alía con figuras como Antonio (científico del Sur), Tomás (guerrero del Árbol) y Valeria (guerrera misteriosa). Enfrenta al Tío Rony. Hay artefactos mágicos como el Redoblick (concede deseos), el Baúl Mágico (portal), y los Amuletos del Árbol de la Vida. El tiempo en Naiara pasa más lento (3 años Tierra = 6 meses Naiara).
+                `;
+
+                const prompt = `Given the book context: "${bookSummary}" and knowing that the artifact "${artifactName}" is described as "${artifactDescription}", generate a short (100-150 words) "secret lore" or deeper, lesser-known background story about this artifact within the world of Naiara. Be creative but stay consistent with the provided summary. Start directly with the lore.`;
+
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [{ text: prompt }]
+                        }
+                    ],
+                };
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const generatedLore = result.candidates[0].content.parts[0].text;
+                        loreModalText.textContent = generatedLore;
+                    } else {
+                        loreModalText.textContent = "Lo siento, no se pudo generar el lore secreto. Intenta de nuevo.";
+                        console.error("Unexpected API response structure for lore:", result);
+                    }
+                } catch (error) {
+                    loreModalText.textContent = "Hubo un error al generar el lore. Por favor, inténtalo más tarde.";
+                    console.error("Error calling Gemini API for lore:", error);
+                } finally {
+                    loreLoading.classList.add('hidden');
+                }
+            };
+
+            const closeLoreModal = () => {
+                loreModal.querySelector('.modal-content').classList.add('scale-95');
+                loreModal.classList.add('opacity-0');
+                setTimeout(() => loreModal.classList.add('hidden'), 300);
+            };
+
+            loreModalCloseButton.addEventListener('click', closeLoreModal);
+            loreModal.addEventListener('click', (e) => {
+                if (e.target === loreModal) {
+                    closeLoreModal();
                 }
             });
 
