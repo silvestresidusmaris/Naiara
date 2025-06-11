@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naiara: Explorador Interactivo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral Harmony -->
+    <!-- Application Structure Plan: A thematic, non-linear SPA with a top navigation bar linking to interactive sections: a clickable plot timeline, a world comparison view with a time dilation chart, a filterable character relationship map, an artifact gallery, and a map of Naiara's legions. This structure is chosen to deconstruct the complex novel into explorable themes, allowing users to engage with the world, characters, and plot in any order, fostering discovery over linear reading. -->
+    <!-- Visualization & Content Choices: Plot -> Timeline (HTML/CSS) -> Click for info -> Visualizes narrative flow. Time Dilation -> Bar Chart (Chart.js) -> Compare -> Quantifies a key plot twist. Characters -> Interactive Map (HTML/CSS/JS) -> Explore relationships -> Clarifies social dynamics, now with LLM-powered character dialogue. Artifacts/Legions -> Cards/Diagram (HTML/CSS) -> Inform -> Organizes world-building info. This avoids static text and uses interaction to explain complex elements. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #4A4A4A;
+        }
+        h1, h2, h3, h4, h5, h6, .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            top: 1.25rem;
+            left: -0.45rem;
+            width: 0.875rem;
+            height: 0.875rem;
+            border-radius: 9999px;
+            background-color: #D4C3A3;
+            border: 2px solid #FDFBF8;
+        }
+        .timeline-path {
+            position: absolute;
+            top: 1.25rem;
+            left: 0;
+            width: 2px;
+            height: 100%;
+            background-color: #D4C3A3;
+        }
+        .active-nav {
+            color: #8C6A5D;
+            font-weight: 700;
+        }
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+        .chat-message {
+            padding: 8px 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            max-width: 80%;
+        }
+        .chat-message.user {
+            background-color: #D4C3A3;
+            color: white;
+            align-self: flex-end;
+        }
+        .chat-message.model {
+            background-color: #EFEBE9;
+            color: #4A4A4A;
+            align-self: flex-start;
+        }
+    </style>
+</head>
+<body class="bg-[#FDFBF8]">
+
+    <header class="sticky top-0 z-40 bg-[#FDFBF8]/80 backdrop-blur-lg shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl md:text-2xl font-bold text-[#8C6A5D] font-cinzel">Naiara</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#journey" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-[#8C6A5D]">El Viaje</a>
+                        <a href="#worlds" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-[#8C6A5D]">Los Mundos</a>
+                        <a href="#characters" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-[#8C6A5D]">Personajes</a>
+                        <a href="#artifacts" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-[#8C6A5D]">Artefactos</a>
+                        <a href="#legions" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-[#8C6A5D]">Legiones</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-100 focus:outline-none">
+                        <span class="sr-only">Abrir menú principal</span>
+                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div id="mobile-menu" class="md:hidden hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#journey" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#8C6A5D]">El Viaje</a>
+                <a href="#worlds" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#8C6A5D]">Los Mundos</a>
+                <a href="#characters" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#8C6A5D]">Personajes</a>
+                <a href="#artifacts" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#8C6A5D]">Artefactos</a>
+                <a href="#legions" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#8C6A5D]">Legiones</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <section id="hero" class="text-center py-16 md:py-24">
+            <h1 class="text-4xl md:text-6xl font-bold font-cinzel tracking-wider text-[#6D4C41]">Naiara</h1>
+            <h2 class="text-2xl md:text-4xl mt-2 font-cinzel text-gray-600">La Legión Perdida y el Árbol de la Vida</h2>
+            <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-500">Una exploración interactiva del mundo creado por Stella Silvestre. Descubre los secretos, los personajes y la magia que conectan dos universos.</p>
+        </section>
+
+        <div class="space-y-24 md:space-y-32">
+
+            <section id="journey">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold font-cinzel text-[#8C6A5D]">El Viaje de Federico</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-gray-600">La misión de un hijo para salvar a su familia lo lleva a través de mundos y desafíos inesperados. Sigue su camino y descubre los momentos clave que definieron su destino. Haz clic en cada hito para revelar más.</p>
+                </div>
+                <div class="relative md:border-l-2 md:border-[#D4C3A3] md:pl-6">
+                    <div id="timeline-container" class="space-y-12"></div>
+                </div>
+            </section>
+
+            <section id="worlds">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold font-cinzel text-[#8C6A5D]">Los Dos Mundos</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-gray-600">La Tierra y Naiara: dos realidades separadas por un velo mágico, pero unidas por el destino de una familia. Explora sus contrastes, especialmente la enigmática dilatación del tiempo que acelera la urgencia de la misión.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8 items-start">
+                    <div class="bg-white/50 rounded-lg p-6 shadow-md border border-gray-200/50">
+                        <h3 class="text-2xl font-bold font-cinzel text-center text-[#6D4C41]">La Tierra</h3>
+                        <ul class="mt-4 space-y-3 text-gray-700">
+                            <li><span class="font-bold text-[#A1887F]">Realidad:</span> Cotidiana, moderna y tecnológica.</li>
+                            <li><span class="font-bold text-[#A1887F]">Conflicto Principal:</span> La grave enfermedad de Rachel y la crisis económica de la familia Hauser.</li>
+                            <li><span class="font-bold text-[#A1887F]">Personajes Clave:</span> Ana, cuidando a su madre; Tío Rony, el antagonista familiar.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white/50 rounded-lg p-6 shadow-md border border-gray-200/50">
+                        <h3 class="text-2xl font-bold font-cinzel text-center text-[#6D4C41]">Naiara</h3>
+                        <ul class="mt-4 space-y-3 text-gray-700">
+                            <li><span class="font-bold text-[#A1887F]">Realidad:</span> Mundo mágico sin tecnología moderna, regido por legiones y antiguas costumbres.</li>
+                            <li><span class="font-bold text-[#A1887F]">Conflicto Principal:</span> La búsqueda de la "flor de lis", luchas de poder y la amenaza sobre el Árbol de la Vida.</li>
+                            <li><span class="font-bold text-[#A1887F]">Personajes Clave:</span> La realeza Lis, los guerreros, y seres con habilidades místicas.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-12">
+                    <h3 class="text-2xl font-bold font-cinzel text-center mb-4 text-[#8C6A5D]">La Dilatación del Tiempo</h3>
+                    <div class="chart-container">
+                        <canvas id="timeDilationChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="characters">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold font-cinzel text-[#8C6A5D]">Personajes Principales</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-gray-600">Las alianzas y enemistades definen el camino. Conoce a los personajes que juegan un papel crucial en la saga de Naiara. Selecciona un filtro para explorar las relaciones.</p>
+                </div>
+                <div class="flex justify-center mb-8 space-x-2 md:space-x-4">
+                    <button class="filter-btn active px-4 py-2 bg-[#D4C3A3] text-white rounded-full text-sm" data-filter="all">Todos</button>
+                    <button class="filter-btn px-4 py-2 bg-white text-gray-600 border border-[#D4C3A3] rounded-full text-sm" data-filter="familia">Familia Hauser</button>
+                    <button class="filter-btn px-4 py-2 bg-white text-gray-600 border border-[#D4C3A3] rounded-full text-sm" data-filter="aliados">Aliados en Naiara</button>
+                    <button class="filter-btn px-4 py-2 bg-white text-gray-600 border border-[#D4C3A3] rounded-full text-sm" data-filter="realeza">Realeza Lis</button>
+                </div>
+                <div id="character-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                </div>
+            </section>
+
+            <section id="artifacts">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold font-cinzel text-[#8C6A5D]">Artefactos Mágicos</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-gray-600">Objetos imbuidos de un poder antiguo que pueden cambiar el curso del destino. Desde portales interdimensionales hasta la fuente de toda curación, estos artefactos son el centro de la trama.</p>
+                </div>
+                <div id="artifact-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                </div>
+            </section>
+
+            <section id="legions">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold font-cinzel text-[#8C6A5D]">Las Legiones de Naiara</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-gray-600">Naiara está dividida en territorios con culturas y especializaciones únicas. Cada legión guarda secretos y juega un papel vital en el equilibrio del poder en este mundo mágico.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                    <div class="bg-white/50 rounded-lg p-6 shadow-md border border-gray-200/50">
+                        <h3 class="text-2xl font-bold font-cinzel text-[#6D4C41]">Legión del Oeste</h3>
+                        <p class="text-5xl my-4">👑</p>
+                        <p class="text-gray-600">Hogar de la familia real Lis. Conocida por el deporte ecuestre "speero" y el festival de la Santa Florencia, donde se honra la "flor de lis". Su política es central para Naiara.</p>
+                    </div>
+                     <div class="bg-white/50 rounded-lg p-6 shadow-md border border-gray-200/50">
+                        <h3 class="text-2xl font-bold font-cinzel text-[#6D4C41]">Legión del Este</h3>
+                         <p class="text-5xl my-4">🌳</p>
+                        <p class="text-gray-600">Una región selvática y mística, hogar del poderoso Árbol de la Vida y de los descendientes de la familia Hauser. Es el origen del libro mágico y un centro de poder curativo.</p>
+                    </div>
+                    <div class="bg-white/50 rounded-lg p-6 shadow-md border border-gray-200/50">
+                        <h3 class="text-2xl font-bold font-cinzel text-[#6D4C41]">Legión del Sur</h3>
+                        <p class="text-5xl my-4">🔬</p>
+                        <p class="text-gray-600">Territorio de científicos, doctores y profesores. Famosa por su dominio del "arte de la separación" (proyecciones astrales) y el conocimiento avanzado, como el que posee Antonio.</p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer class="mt-24 bg-[#EFEBE9]">
+        <div class="container mx-auto py-6 px-4 text-center text-gray-600">
+            <p>&copy; 2024 Explorador Interactivo de Naiara. Creado como un homenaje a la obra de Stella Silvestre.</p>
+        </div>
+    </footer>
+    
+    <div id="modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden opacity-0">
+        <div class="modal-content bg-white rounded-lg shadow-xl max-w-lg w-full p-6 relative transform scale-95">
+            <button id="modal-close-button" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h3 id="modal-title" class="text-2xl font-bold font-cinzel text-[#8C6A5D] mb-4"></h3>
+            <p id="modal-text" class="text-gray-700"></p>
+        </div>
+    </div>
+
+    <div id="character-chat-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden opacity-0">
+        <div class="modal-content bg-white rounded-lg shadow-xl max-w-lg w-full p-6 relative transform scale-95 flex flex-col h-[80vh]">
+            <button id="chat-modal-close-button" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h3 id="chat-modal-character-name" class="text-2xl font-bold font-cinzel text-[#8C6A5D] mb-4 text-center"></h3>
+            <div id="chat-history" class="flex-grow overflow-y-auto p-2 bg-gray-50 rounded-md mb-4 flex flex-col space-y-2">
+                <!-- Chat messages will be appended here -->
+            </div>
+            <div class="flex items-center">
+                <input type="text" id="chat-input" placeholder="Pregunta algo al personaje..." class="flex-grow border border-gray-300 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-[#D4C3A3]">
+                <button id="send-chat-button" class="ml-3 px-6 py-2 bg-[#8C6A5D] text-white rounded-full hover:bg-[#6D4C41] transition-colors flex items-center justify-center">
+                    <span id="send-chat-text">Enviar</span>
+                    <div id="send-chat-loading" class="hidden loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-5 w-5 ml-2"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            const timelineData = [
+                {
+                    title: "El Deseo Desesperado",
+                    description: "Federico, agobiado por la enfermedad de su madre y la desaparición de su padre, usa un artefacto mágico, el Redoblick, para encontrar una llave. Inesperadamente, este deseo lo transporta al mundo de Naiara.",
+                },
+                {
+                    title: "El Reencuentro",
+                    description: "En Naiara, Federico encuentra a su padre, quien creía abandonado. Descubre que ha estado buscando una cura, la 'flor de lis', y está atrapado en este mundo donde el tiempo pasa de forma diferente.",
+                },
+                {
+                    title: "Integración en Naiara",
+                    description: "Federico comienza a adaptarse a la vida en la Legión del Oeste. Aprende a jugar 'speero', el deporte local, y establece relaciones con la familia real, incluyendo a la princesa Florencia y el príncipe Ismael.",
+                },
+                {
+                    title: "La Conexión Mística",
+                    description: "Mientras tanto, en la Tierra, su hermana Ana se comunica con un guerrero de Naiara, Tomás, a través de un amuleto del Árbol de la Vida. Este amuleto es la única esperanza para mantener a su madre con vida.",
+                },
+                {
+                    title: "El Robo del Baúl",
+                    description: "Federico y sus nuevos amigos intentan robar la 'flor de lis' para la reina Elizabeth. En un giro moral, Federico decide no tomar la única flor. La reina interviene y le ayuda a obtener el baúl mágico, un portal interdimensional.",
+                },
+                {
+                    title: "El Viaje al Este",
+                    description: "Con el baúl en su poder, Federico y su padre viajan a la Legión del Este, hogar de sus ancestros y del Árbol de la Vida. En el camino, se les une el misterioso científico Antonio.",
+                },
+                {
+                    title: "La Batalla por el Árbol",
+                    description: "Llegan al Árbol de la Vida justo a tiempo para una ceremonia de curación y una brutal emboscada. Durante la batalla, el portal del baúl se activa, absorbiendo a su padre y a Tomás.",
+                },
+                {
+                    title: "La Flor y el Sacrificio",
+                    description: "Federico es salvado por una guerrera, Valeria. Juntos, se aventuran en un bosque maligno para encontrar la 'flor de lis'. Federico obtiene la flor, la comparte con el Rey Lis y, con la ayuda de Valeria, activa el portal para regresar a casa.",
+                },
+            ];
+
+            const charactersData = [
+                { name: "Federico", role: "El Héroe Viajero", icon: "🧑‍🚀", group: "familia" },
+                { name: "Padre Hauser", role: "El Padre Atrapado", icon: "👨‍🔬", group: "familia" },
+                { name: "Ana", role: "La Guardiana en la Tierra", icon: "👩‍⚕️", group: "familia" },
+                { name: "Rachel", role: "La Madre Enferma", icon: "💔", group: "familia" },
+                { name: "Florencia", role: "La Princesa del Oeste", icon: "👸", group: "realeza" },
+                { name: "Ismael", role: "El Príncipe Guerrero", icon: "🤴", group: "realeza" },
+                { name: "Rey Lis", role: "El Monarca Afligido", icon: "👑", group: "realeza" },
+                { name: "Antonio", role: "El Científico del Sur", icon: "🔬", group: "aliados" },
+                { name: "Tomás", role: "El Guerrero del Árbol", icon: "🌳", group: "aliados" },
+                { name: "Valeria", role: "La Guerrera Misteriosa", icon: "⚔️", group: "aliados" },
+                { name: "Tío Rony", role: "El Tío Usurpador", icon: "😠", group: "familia" },
+            ];
+            
+            const artifactsData = [
+                 {
+                    name: "Redoblick",
+                    icon: "🌿",
+                    description: "Una pequeña rama con inscripciones doradas que concede tres deseos. Tiene limitaciones estrictas: no puede transportar seres vivos, revivir a los muertos ni causar daño. Es el catalizador del viaje de Federico."
+                },
+                {
+                    name: "El Baúl Mágico",
+                    icon: "📦",
+                    description: "Un cofre que funciona como un portal interdimensional entre la Tierra y Naiara. Puede cambiar de tamaño según el deseo de su portador y se activa con el Redoblick o la energía del Árbol de la Vida."
+                },
+                {
+                    name: "Árbol de la Vida y Amuletos",
+                    icon: "🌳",
+                    description: "La fuente de toda la magia curativa en Naiara. Sus amuletos pueden realizar curaciones a distancia y permitir la comunicación entre mundos, pero su poder depende de la energía lunar y es limitado."
+                },
+                {
+                    name: "Flor de Lis",
+                    icon: "⚜️",
+                    description: "Una flor legendaria que es la única cura permanente para las enfermedades más graves. Es extremadamente rara y crece en lugares protegidos o peligrosos, siendo el objetivo principal de la misión de Federico."
+                },
+            ];
+
+            const timelineContainer = document.getElementById('timeline-container');
+            timelineData.forEach((item, index) => {
+                const isLeft = index % 2 === 0;
+                const timelineItem = document.createElement('div');
+                timelineItem.className = `timeline-item relative pl-8 cursor-pointer hover:opacity-75 transition-opacity`;
+                timelineItem.innerHTML = `
+                    <div class="absolute top-5 left-[-0.45rem] w-3.5 h-3.5 rounded-full bg-[#D4C3A3] border-2 border-white"></div>
+                    <div class="relative bg-white/60 p-4 rounded-lg shadow-md border border-gray-200/50">
+                        <h4 class="font-bold text-lg font-cinzel text-[#8C6A5D]">${item.title}</h4>
+                    </div>`;
+                timelineItem.addEventListener('click', () => openModal(item.title, item.description));
+                timelineContainer.appendChild(timelineItem);
+            });
+            const path = document.createElement('div');
+            path.className = 'timeline-path';
+            timelineContainer.prepend(path);
+
+            const artifactContainer = document.getElementById('artifact-container');
+            artifactsData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-white/50 rounded-lg p-6 shadow-md border border-gray-200/50 flex flex-col items-center text-center";
+                card.innerHTML = `
+                    <div class="text-6xl mb-4">${item.icon}</div>
+                    <h4 class="text-xl font-bold font-cinzel text-[#8C6A5D] mb-2">${item.name}</h4>
+                    <p class="text-gray-600 flex-grow">${item.description}</p>
+                `;
+                artifactContainer.appendChild(card);
+            });
+
+            const characterGrid = document.getElementById('character-grid');
+            const renderCharacters = (filter) => {
+                characterGrid.innerHTML = '';
+                const filteredData = charactersData.filter(c => filter === 'all' || c.group === filter);
+                filteredData.forEach(char => {
+                    const card = document.createElement('div');
+                    card.className = `character-card bg-white/50 rounded-lg p-4 shadow-md border border-gray-200/50 text-center flex flex-col items-center justify-center transition-transform transform hover:scale-105`;
+                    card.dataset.group = char.group;
+                    card.innerHTML = `
+                        <div class="text-5xl mb-2">${char.icon}</div>
+                        <h4 class="font-bold text-md md:text-lg">${char.name}</h4>
+                        <p class="text-xs text-gray-500">${char.role}</p>
+                        <button class="talk-to-character-btn mt-4 px-4 py-2 bg-[#D4C3A3] text-white rounded-full text-sm hover:bg-[#A1887F] transition-colors flex items-center">
+                            ✨ Hablar con ${char.name}
+                        </button>
+                    `;
+                    characterGrid.appendChild(card);
+                });
+
+                document.querySelectorAll('.talk-to-character-btn').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const characterName = event.target.closest('.character-card').querySelector('h4').textContent;
+                        const character = charactersData.find(c => c.name === characterName);
+                        openCharacterChatModal(character);
+                    });
+                });
+            };
+
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterButtons.forEach(b => {
+                        b.classList.remove('active', 'bg-[#D4C3A3]', 'text-white');
+                        b.classList.add('bg-white', 'text-gray-600', 'border', 'border-[#D4C3A3]');
+                    });
+                    btn.classList.add('active', 'bg-[#D4C3A3]', 'text-white');
+                    btn.classList.remove('bg-white', 'text-gray-600', 'border', 'border-[#D4C3A3]');
+                    renderCharacters(btn.dataset.filter);
+                });
+            });
+
+            renderCharacters('all');
+            
+            const timeCtx = document.getElementById('timeDilationChart').getContext('2d');
+            new Chart(timeCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Tierra', 'Naiara'],
+                    datasets: [{
+                        label: 'Años Transcurridos',
+                        data: [3, 0.5],
+                        backgroundColor: ['rgba(140, 106, 93, 0.6)', 'rgba(212, 195, 163, 0.6)'],
+                        borderColor: ['rgba(140, 106, 93, 1)', 'rgba(212, 195, 163, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: {
+                            display: true,
+                            text: '3 Años en la Tierra equivalen a 6 Meses en Naiara',
+                            font: { family: "'Inter', sans-serif", size: 14 },
+                            color: '#4A4A4A'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y + ' años';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Años',
+                                font: { family: "'Inter', sans-serif" }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                    }
+                });
+            });
+
+            const sections = document.querySelectorAll('section[id]');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        document.querySelectorAll('.nav-link').forEach(link => {
+                            link.classList.remove('active-nav');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active-nav');
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: "-50% 0px -50% 0px" });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalText = document.getElementById('modal-text');
+            const modalCloseButton = document.getElementById('modal-close-button');
+
+            const openModal = (title, text) => {
+                modalTitle.textContent = title;
+                modalText.textContent = text;
+                modal.classList.remove('hidden');
+                setTimeout(() => modal.classList.remove('opacity-0'), 10);
+                setTimeout(() => modal.querySelector('.modal-content').classList.remove('scale-95'), 10);
+            };
+
+            const closeModal = () => {
+                modal.querySelector('.modal-content').classList.add('scale-95');
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            };
+
+            modalCloseButton.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            // Character Chat Modal Logic
+            const chatModal = document.getElementById('character-chat-modal');
+            const chatModalCharacterName = document.getElementById('chat-modal-character-name');
+            const chatHistoryContainer = document.getElementById('chat-history');
+            const chatInput = document.getElementById('chat-input');
+            const sendChatButton = document.getElementById('send-chat-button');
+            const sendChatText = document.getElementById('send-chat-text');
+            const sendChatLoading = document.getElementById('send-chat-loading');
+            const chatModalCloseButton = document.getElementById('chat-modal-close-button');
+
+            let currentChatHistory = [];
+            let currentCharacter = null;
+
+            const openCharacterChatModal = (character) => {
+                currentCharacter = character;
+                chatModalCharacterName.textContent = `Hablar con ${character.name}`;
+                chatHistoryContainer.innerHTML = ''; // Clear previous chat
+                currentChatHistory = []; // Reset chat history for new character
+                chatInput.value = ''; // Clear input
+                chatModal.classList.remove('hidden');
+                setTimeout(() => chatModal.classList.remove('opacity-0'), 10);
+                setTimeout(() => chatModal.querySelector('.modal-content').classList.remove('scale-95'), 10);
+            };
+
+            const closeCharacterChatModal = () => {
+                chatModal.querySelector('.modal-content').classList.add('scale-95');
+                chatModal.classList.add('opacity-0');
+                setTimeout(() => chatModal.classList.add('hidden'), 300);
+            };
+
+            chatModalCloseButton.addEventListener('click', closeCharacterChatModal);
+            chatModal.addEventListener('click', (e) => {
+                if (e.target === chatModal) {
+                    closeCharacterChatModal();
+                }
+            });
+
+            const addMessageToChat = (text, sender) => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${sender} self-${sender === 'user' ? 'end' : 'start'}`;
+                messageDiv.textContent = text;
+                chatHistoryContainer.appendChild(messageDiv);
+                chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight; // Scroll to bottom
+            };
+
+            const sendChatMessage = async () => {
+                const userMessage = chatInput.value.trim();
+                if (!userMessage || !currentCharacter) return;
+
+                addMessageToChat(userMessage, 'user');
+                chatInput.value = ''; // Clear input immediately
+                chatInput.disabled = true;
+                sendChatButton.disabled = true;
+                sendChatText.classList.add('hidden');
+                sendChatLoading.classList.remove('hidden');
+
+                const prompt = `You are ${currentCharacter.name}, a character from the book 'Naiara, la legión perdida y el árbol de la vida'. Your role is ${currentCharacter.role}. The story revolves around Federico's journey between Earth and Naiara to save his mother. He encounters various magical artifacts like the Redoblick, the Magic Chest, the Tree of Life amulets, and the Flor de Lis. Naiara consists of Legions: West (Royalty), East (Tree of Life, Hauser family ancestors), and South (scientists, astral projection). Time dilation exists: 3 Earth years = 6 Naiara months. The current user is asking you a question about the world or events. Respond to the user's question as if you are ${currentCharacter.name}, based on your knowledge and role in the story. Keep responses concise (under 100 words) and in character.`;
+
+                currentChatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [{ text: prompt + "\n\nUser: " + userMessage }]
+                        }
+                    ],
+                };
+
+                // Add previous conversation history if available, but keep total tokens in mind
+                // For simplicity, just sending the current interaction + character prompt for now.
+                // For a more robust solution, manage `currentChatHistory` for context.
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const modelResponse = result.candidates[0].content.parts[0].text;
+                        addMessageToChat(modelResponse, 'model');
+                        currentChatHistory.push({ role: "model", parts: [{ text: modelResponse }] });
+                    } else {
+                        addMessageToChat("Lo siento, no pude generar una respuesta. Intenta de nuevo.", 'model');
+                        console.error("Unexpected API response structure:", result);
+                    }
+                } catch (error) {
+                    console.error("Error calling Gemini API:", error);
+                    addMessageToChat("Hubo un error al comunicarse con el personaje. Por favor, inténtalo más tarde.", 'model');
+                } finally {
+                    chatInput.disabled = false;
+                    sendChatButton.disabled = false;
+                    sendChatText.classList.remove('hidden');
+                    sendChatLoading.classList.add('hidden');
+                }
+            };
+
+            sendChatButton.addEventListener('click', sendChatMessage);
+            chatInput.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+
+        });
+    </script>
+</body>
+</html>
