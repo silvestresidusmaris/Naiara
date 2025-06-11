@@ -76,6 +76,20 @@
             color: #4A4A4A;
             align-self: flex-start;
         }
+        /* Loading spinner for chat */
+        .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @-webkit-keyframes spinner {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-[#FDFBF8]">
@@ -93,6 +107,7 @@
                         <a href="#characters" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-[#8C6A5D]">Personajes</a>
                         <a href="#artifacts" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-[#8C6A5D]">Artefactos</a>
                         <a href="#legions" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-[#8C6A5D]">Legiones</a>
+                        <a href="#buy-book" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-[#8C6A5D]">Comprar Libro</a>
                     </div>
                 </div>
                 <div class="md:hidden">
@@ -112,6 +127,7 @@
                 <a href="#characters" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#8C6A5D]">Personajes</a>
                 <a href="#artifacts" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#8C6A5D]">Artefactos</a>
                 <a href="#legions" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#8C6A5D]">Legiones</a>
+                <a href="#buy-book" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#8C6A5D]">Comprar Libro</a>
             </div>
         </div>
     </header>
@@ -122,6 +138,19 @@
             <h1 class="text-4xl md:text-6xl font-bold font-cinzel tracking-wider text-[#6D4C41]">Naiara</h1>
             <h2 class="text-2xl md:text-4xl mt-2 font-cinzel text-gray-600">La Legión Perdida y el Árbol de la Vida</h2>
             <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-500">Una exploración interactiva del mundo creado por Stella Silvestre. Descubre los secretos, los personajes y la magia que conectan dos universos.</p>
+            
+            <div class="mt-8">
+                <h3 class="text-xl md:text-2xl font-cinzel text-[#8C6A5D] mb-4">Resumen en Audio del Libro</h3>
+                <audio controls class="w-full max-w-xl mx-auto rounded-lg shadow-md bg-white">
+                    <!-- Por favor, inserta aquí la URL de tu archivo de audio (mp3, wav, etc.). -->
+                    <!-- Ejemplo: <source src="https://ejemplo.com/tu_audio_resumen.mp3" type="audio/mpeg"> -->
+                    <source src="" type="audio/mpeg">
+                    Tu navegador no soporta el elemento de audio.
+                </audio>
+                <p class="mt-2 text-sm text-gray-500">
+                    (Este es un marcador de posición para el resumen de audio. Por favor, sustituye el atributo 'src' del &lt;source&gt; con la URL de tu archivo de audio).
+                </p>
+            </div>
         </section>
 
         <div class="space-y-24 md:space-y-32">
@@ -212,6 +241,21 @@
                         <p class="text-5xl my-4">🔬</p>
                         <p class="text-gray-600">Territorio de científicos, doctores y profesores. Famosa por su dominio del "arte de la separación" (proyecciones astrales) y el conocimiento avanzado, como el que posee Antonio.</p>
                     </div>
+                </div>
+            </section>
+
+            <section id="buy-book" class="py-16 md:py-24 bg-[#EFEBE9] rounded-lg shadow-xl text-center">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <h2 class="text-3xl md:text-4xl font-bold font-cinzel text-[#6D4C41] mb-6">¡Adquiere tu Copia de Naiara Hoy!</h2>
+                    <p class="max-w-2xl mx-auto text-lg text-gray-700 mb-8">Sumérgete en la aventura completa de Federico y descubre todos los misterios de Naiara. Tu próxima gran lectura te espera.</p>
+                    
+                    <div class="flex justify-center items-center h-48 bg-white/70 rounded-lg p-6 border border-gray-200/50">
+                        <!-- Código de compra de Gumroad insertado aquí -->
+                        <a href="https://silvestre85.gumroad.com/l/byfqm" class="gumroad-button px-8 py-4 bg-[#8C6A5D] text-white font-bold text-xl rounded-full shadow-lg hover:bg-[#6D4C41] transition-all duration-300 transform hover:scale-105">Comprar "Naiara" Ahora</a>
+                        <script src="https://gumroad.com/js/gumroad.js"></script>
+                    </div>
+
+                    <p class="mt-8 text-sm text-gray-500">Al hacer clic, serás redirigido a una plataforma segura para completar tu compra.</p>
                 </div>
             </section>
 
@@ -568,7 +612,19 @@
                 sendChatText.classList.add('hidden');
                 sendChatLoading.classList.remove('hidden');
 
-                const prompt = `You are ${currentCharacter.name}, a character from the book 'Naiara, la legión perdida y el árbol de la vida'. Your role is ${currentCharacter.role}. The story revolves around Federico's journey between Earth and Naiara to save his mother. He encounters various magical artifacts like the Redoblick, the Magic Chest, the Tree of Life amulets, and the Flor de Lis. Naiara consists of Legions: West (Royalty), East (Tree of Life, Hauser family ancestors), and South (scientists, astral projection). Time dilation exists: 3 Earth years = 6 Naiara months. The current user is asking you a question about the world or events. Respond to the user's question as if you are ${currentCharacter.name}, based on your knowledge and role in the story. Keep responses concise (under 100 words) and in character.`;
+                // This context needs to be dynamically pulled from the book content or a concise summary
+                // For a static HTML page, this is hardcoded for demonstration.
+                const bookSummary = `
+                    'Naiara, la legión perdida y el árbol de la vida' es una novela de fantasía que sigue a Federico, quien viaja entre la Tierra y el mundo mágico de Naiara para encontrar la 'flor de lis' y curar a su madre enferma, Rachel. En Naiara, se reencuentra con su padre, descubre la familia real Lis (con el rey Lis, princesa Florencia y príncipe Ismael), y se alía con figuras como Antonio (científico del Sur), Tomás (guerrero del Árbol) y Valeria (guerrera misteriosa). Enfrenta al Tío Rony. Hay artefactos mágicos como el Redoblick (concede deseos), el Baúl Mágico (portal), y los Amuletos del Árbol de la Vida. El tiempo en Naiara pasa más lento (3 años Tierra = 6 meses Naiara).
+                `;
+
+                const characterSpecificContext = `Eres ${currentCharacter.name}, un personaje del libro 'Naiara, la legión perdida y el árbol de la vida'. Tu papel es ${currentCharacter.role}.`;
+                
+                const prompt = `${characterSpecificContext} Basado en el siguiente resumen del libro y tu papel, responde a la pregunta del usuario como si fueras ${currentCharacter.name}. Mantén las respuestas concisas (menos de 100 palabras) y en personaje. No menciones que eres un modelo de IA.
+
+                Resumen del libro: ${bookSummary}
+
+                Usuario: ${userMessage}`;
 
                 currentChatHistory.push({ role: "user", parts: [{ text: userMessage }] });
 
@@ -576,14 +632,10 @@
                     contents: [
                         {
                             role: "user",
-                            parts: [{ text: prompt + "\n\nUser: " + userMessage }]
+                            parts: [{ text: prompt }]
                         }
                     ],
                 };
-
-                // Add previous conversation history if available, but keep total tokens in mind
-                // For simplicity, just sending the current interaction + character prompt for now.
-                // For a more robust solution, manage `currentChatHistory` for context.
 
                 const apiKey = "";
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
